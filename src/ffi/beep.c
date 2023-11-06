@@ -9,7 +9,6 @@ const int FREQUENCY = 44100;
 
 void beep(double frequency, int duration) {
     int samples = (int)(duration * 0.001 * FREQUENCY);
-    int sample_rate = FREQUENCY / frequency;
     int16_t *buf = (int16_t *)malloc(samples * sizeof(int16_t));
     if (!buf) {
         fprintf(stderr, "Malloc failed\n");

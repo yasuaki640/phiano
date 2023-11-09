@@ -11,20 +11,31 @@ if (!file_exists($path)) {
     exit(1);
 }
 
-// open csv file
 $handle = fopen($path, "r");
 if ($handle === false) {
     echo "Could not open file $path" . PHP_EOL;
     exit(1);
 }
 
-// read csv file
-$songs = [];
-while (($note = fgetcsv($handle)) !== false) {
-    $songs[] = $note;
+/** @var array{0: int, 1: string}[] $notes */
+$notes = [];
+while (($n = fgetcsv($handle)) !== false) {
+    $notes[] = $n;
 }
-
-// close csv file
 fclose($handle);
 
-var_dump($songs);
+$ffi = FFI::cdef("
+    typedef struct {
+        double frequency;
+        int duration;
+    } Note;
+
+    void beep(Note note);
+", __DIR__ . "/ffi/beep.so");
+
+$cNote = $ffi->new("Note");
+$cNote->frequency = 443.0;
+$cNote->duration = 2000;
+
+$ffi->beep($cNote);
+

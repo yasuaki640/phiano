@@ -21,6 +21,13 @@ $equalTemperament = [
     "B" => 493.883,
 ];
 
+class Note {
+    public function __construct(
+        public readonly float $frequency,
+        public readonly int $duration // ms
+    ) {}
+}
+
 if (count($argv) < 2) {
     echo "The path to CSV file is required" . PHP_EOL;
     exit(1);
@@ -38,11 +45,18 @@ if ($handle === false) {
     exit(1);
 }
 
-/** @var array{0: string, 1: float}[] $notes */
+/** @var Note[] */
 $notes = [];
+
 fgetcsv($handle); // skip header
-while (($n = fgetcsv($handle)) !== false) {
-    $notes[] = $n;
+while (($row = fgetcsv($handle)) !== false) {
+    $frequency = $equalTemperament[$row[0]];
+    $duration = floatval($row[1]);
+    $notes[] = new Note(
+        $frequency,
+        $duration
+    );
+
 }
 fclose($handle);
 
@@ -56,8 +70,7 @@ $ffi = FFI::cdef("
 ", __DIR__ . "/ffi/beep.so");
 
 $cNote = $ffi->new("Note");
-$cNote->frequency = $equalTemperament[$notes[1][0]];
-$cNote->duration = 2000;
+$cNote->frequency = $notes[0]->frequency;
+$cNote->duration = $notes[0]->duration;
 
 $ffi->beep($cNote);
-

@@ -18,7 +18,7 @@ $equalTemperament = [
     "A#" => 466.164,
     "Bb" => 466.164,
     "B" => 493.883,
-    "R" => 0,
+    "R" => 0.0
 ];
 
 class Note

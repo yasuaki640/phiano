@@ -12,6 +12,31 @@ typedef struct {
     int duration;
 } Note;
 
+typedef struct {
+    int16_t *buf;
+    int total_samples;
+    int sample_index;
+} AudioData;
+
+void audio_callback(void *userdata, Uint8 *stream, int len) {
+    AudioData *audio_data = (AudioData *)userdata;
+    int16_t *buf = audio_data->buf;
+    int total_samples = audio_data->total_samples;
+    int sample_index = audio_data->sample_index;
+
+    int16_t *stream16 = (int16_t *)stream;
+    int stream_len = len / sizeof(int16_t);
+
+    for (int i = 0; i < stream_len; i++) {
+        if (sample_index >= total_samples) {
+            break;
+        }
+        stream16[i] = buf[sample_index++];
+    }
+
+    audio_data->sample_index = sample_index;
+}
+
 void beep(Note notes[], int num_notes) {
     int total_samples = 0;
     for (int i = 0; i < num_notes; i++) {
@@ -38,22 +63,27 @@ void beep(Note notes[], int num_notes) {
     beep_spec.freq = FREQUENCY;
     beep_spec.format = AUDIO_S16SYS;
     beep_spec.channels = 1;
-    beep_spec.samples = total_samples;
-    beep_spec.callback = NULL;
-    beep_spec.userdata = NULL;
+    beep_spec.samples = 4096;
+    beep_spec.callback = audio_callback;
+
+    AudioData audio_data;
+    audio_data.buf = buf;
+    audio_data.total_samples = total_samples;
+    audio_data.sample_index = 0;
+
+    beep_spec.userdata = &audio_data;
 
     if (SDL_OpenAudio(&beep_spec, NULL) < 0) {
         fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
         exit(1);
     }
 
-    SDL_PauseAudio(0);
-    SDL_QueueAudio(1, buf, total_samples * sizeof(int16_t));
-
     int total_duration = 0;
     for (int i = 0; i < num_notes; i++) {
         total_duration += notes[i].duration;
     }
+
+    SDL_PauseAudio(0);
     SDL_Delay(total_duration);
     SDL_PauseAudio(1);
     SDL_CloseAudio();

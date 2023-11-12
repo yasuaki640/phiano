@@ -1,5 +1,85 @@
 <?php
 
+class Note
+{
+    public function __construct(
+        public readonly float $frequency,
+        public readonly int   $duration // ms
+    )
+    {
+    }
+}
+
+function validateFile(string $path): void
+{
+    if (!file_exists($path)) {
+        echo "File $path does not exist" . PHP_EOL;
+        exit(1);
+    }
+
+    $handle = fopen($path, "r");
+    if ($handle === false) {
+        echo "Could not open file $path" . PHP_EOL;
+        exit(1);
+    }
+
+    fclose($handle);
+}
+
+function parseCsv(string $path, array $equalTemperament): array
+{
+    $handle = fopen($path, "r");
+    fgetcsv($handle); // skip header
+
+    $notes = [];
+    while (($row = fgetcsv($handle)) !== false) {
+        $frequency = $equalTemperament[$row[0]];
+        $duration = floatval($row[1]);
+        $notes[] = new Note(
+            $frequency,
+            $duration
+        );
+    }
+    fclose($handle);
+
+    return $notes;
+}
+
+function playNotes(array $notes): void
+{
+    $ffi = FFI::cdef("
+        typedef struct {
+            double frequency;
+            int duration;
+        } Note;
+
+        void beep(Note notes[], int num_notes);
+    ", __DIR__ . "/ffi/beep.so");
+
+    $cNotes = $ffi->new("Note[" . count($notes) . "]");
+    foreach ($notes as $i => $note) {
+        $cNote = $cNotes[$i];
+        $cNote->frequency = $note->frequency;
+        $cNote->duration = $note->duration;
+    }
+
+    $ffi->beep($cNotes, count($notes));
+}
+
+function main(array $argv, array $equalTemperament): void
+{
+    if (count($argv) < 2) {
+        echo "The path to CSV file is required" . PHP_EOL;
+        exit(1);
+    }
+
+    $path = $argv[1];
+    validateFile($path);
+
+    $notes = parseCsv($path, $equalTemperament);
+    playNotes($notes);
+}
+
 $equalTemperament = [
     "C" => 261.626,
     "C#" => 277.183,
@@ -21,62 +101,4 @@ $equalTemperament = [
     "R" => 0.0
 ];
 
-class Note
-{
-    public function __construct(
-        public readonly float $frequency,
-        public readonly int   $duration // ms
-    )
-    {
-    }
-}
-
-if (count($argv) < 2) {
-    echo "The path to CSV file is required" . PHP_EOL;
-    exit(1);
-}
-
-$path = $argv[1];
-if (!file_exists($path)) {
-    echo "File $path does not exist" . PHP_EOL;
-    exit(1);
-}
-
-$handle = fopen($path, "r");
-if ($handle === false) {
-    echo "Could not open file $path" . PHP_EOL;
-    exit(1);
-}
-
-/** @var Note[] $notes */
-$notes = [];
-
-fgetcsv($handle); // skip header
-while (($row = fgetcsv($handle)) !== false) {
-    $frequency = $equalTemperament[$row[0]];
-    $duration = floatval($row[1]);
-    $notes[] = new Note(
-        $frequency,
-        $duration
-    );
-
-}
-fclose($handle);
-
-$ffi = FFI::cdef("
-    typedef struct {
-        double frequency;
-        int duration;
-    } Note;
-
-    void beep(Note notes[], int num_notes);
-", __DIR__ . "/ffi/beep.so");
-
-$cNotes = $ffi->new("Note[" . count($notes) . "]");
-foreach ($notes as $i => $note) {
-    $cNote = $cNotes[$i];
-    $cNote->frequency = $note->frequency;
-    $cNote->duration = $note->duration;
-}
-
-$ffi->beep($cNotes, count($notes));
+main($argv, $equalTemperament);

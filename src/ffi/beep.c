@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <math.h>
 
-const int AMPLITUDE = 28000;
-const int FREQUENCY = 44100;
+#define AMPLITUDE 28000
+#define FREQUENCY 44100
 
 typedef struct {
     double frequency;
@@ -37,6 +37,13 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
     audio_data->sample_index = sample_index;
 }
 
+void generate_samples(int16_t *buf, int num_samples, double frequency, int duration) {
+    for (int i = 0; i < num_samples; i++) {
+        double time = i / (double)FREQUENCY;
+        buf[i] = (int16_t)(AMPLITUDE * sin(2.0f * M_PI * frequency * time));
+    }
+}
+
 void beep(Note notes[], int num_notes) {
     int total_samples = 0;
     for (int i = 0; i < num_notes; i++) {
@@ -53,10 +60,8 @@ void beep(Note notes[], int num_notes) {
     for (int i = 0; i < num_notes; i++) {
         Note note = notes[i];
         int samples = (int)(note.duration * 0.001 * FREQUENCY);
-        for (int j = 0; j < samples; j++) {
-            double time = j / (double)FREQUENCY;
-            buf[sample_index++] = (int16_t)(AMPLITUDE * sin(2.0f * M_PI * note.frequency * time));
-        }
+        generate_samples(buf + sample_index, samples, note.frequency, note.duration);
+        sample_index += samples;
     }
 
     SDL_AudioSpec beep_spec;

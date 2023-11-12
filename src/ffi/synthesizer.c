@@ -46,7 +46,7 @@ void generate_samples(int16_t *buf, int num_samples, double frequency,
   }
 }
 
-void beep(Note notes[], int num_notes) {
+void synthesizer(Note notes[], int num_notes) {
   int total_samples = 0;
   for (int i = 0; i < num_notes; i++) {
     total_samples += (int)(notes[i].duration * 0.001 * FREQUENCY);
@@ -67,21 +67,21 @@ void beep(Note notes[], int num_notes) {
     sample_index += samples;
   }
 
-  SDL_AudioSpec beep_spec;
-  beep_spec.freq = FREQUENCY;
-  beep_spec.format = AUDIO_S16SYS;
-  beep_spec.channels = 1;
-  beep_spec.samples = 4096;
-  beep_spec.callback = audio_callback;
+  SDL_AudioSpec audio_spec;
+  audio_spec.freq = FREQUENCY;
+  audio_spec.format = AUDIO_S16SYS;
+  audio_spec.channels = 1;
+  audio_spec.samples = 4096;
+  audio_spec.callback = audio_callback;
 
   AudioData audio_data;
   audio_data.buf = buf;
   audio_data.total_samples = total_samples;
   audio_data.sample_index = 0;
 
-  beep_spec.userdata = &audio_data;
+  audio_spec.userdata = &audio_data;
 
-  if (SDL_OpenAudio(&beep_spec, NULL) < 0) {
+  if (SDL_OpenAudio(&audio_spec, NULL) < 0) {
     fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
     exit(1);
   }

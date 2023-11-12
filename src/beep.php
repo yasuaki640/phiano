@@ -1,6 +1,5 @@
 <?php
 
-/** @var array<string, float> */
 $equalTemperament = [
     "C" => 261.626,
     "C#" => 277.183,
@@ -19,13 +18,17 @@ $equalTemperament = [
     "A#" => 466.164,
     "Bb" => 466.164,
     "B" => 493.883,
+    "R" => 0,
 ];
 
-class Note {
+class Note
+{
     public function __construct(
         public readonly float $frequency,
-        public readonly int $duration // ms
-    ) {}
+        public readonly int   $duration // ms
+    )
+    {
+    }
 }
 
 if (count($argv) < 2) {
@@ -45,7 +48,7 @@ if ($handle === false) {
     exit(1);
 }
 
-/** @var Note[] */
+/** @var Note[] $notes */
 $notes = [];
 
 fgetcsv($handle); // skip header
@@ -66,11 +69,14 @@ $ffi = FFI::cdef("
         int duration;
     } Note;
 
-    void beep(Note note);
+    void beep(Note notes[], int num_notes);
 ", __DIR__ . "/ffi/beep.so");
 
-$cNote = $ffi->new("Note");
-$cNote->frequency = $notes[0]->frequency;
-$cNote->duration = $notes[0]->duration;
+$cNotes = $ffi->new("Note[" . count($notes) . "]");
+foreach ($notes as $i => $note) {
+    $cNote = $cNotes[$i];
+    $cNote->frequency = $note->frequency;
+    $cNote->duration = $note->duration;
+}
 
-$ffi->beep($cNote);
+$ffi->beep($cNotes, count($notes));

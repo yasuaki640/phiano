@@ -10,6 +10,10 @@ class Note
     }
 }
 
+/**
+ * @param string $path
+ * @return void
+ */
 function validateFile(string $path): void
 {
     if (!file_exists($path)) {
@@ -26,6 +30,11 @@ function validateFile(string $path): void
     fclose($handle);
 }
 
+/**
+ * @param string $path
+ * @param array<string, float> $equalTemperament
+ * @return array<Note>
+ */
 function parseCsv(string $path, array $equalTemperament): array
 {
     $handle = fopen($path, "r");
@@ -45,6 +54,9 @@ function parseCsv(string $path, array $equalTemperament): array
     return $notes;
 }
 
+/**
+ * @param array<Note> $notes
+ */
 function playNotes(array $notes): void
 {
     $ffi = FFI::cdef("
@@ -66,6 +78,10 @@ function playNotes(array $notes): void
     $ffi->synthesizer($cNotes, count($notes));
 }
 
+/**
+ * @param array $argv
+ * @param array<string, float> $equalTemperament
+ */
 function main(array $argv, array $equalTemperament): void
 {
     if (count($argv) < 2) {

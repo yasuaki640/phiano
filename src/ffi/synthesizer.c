@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "SDL.h"
 
 #define AMPLITUDE 28000
@@ -38,35 +37,14 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
   audio_data->sample_index = sample_index;
 }
 
-void generate_samples(int16_t *buf, int num_samples, double frequency,
-                      int duration) {
+void generateSamples(int16_t *buf, int num_samples, double frequency) {
   for (int i = 0; i < num_samples; i++) {
     double time = i / (double)FREQUENCY;
     buf[i] = (int16_t)(AMPLITUDE * sin(2.0f * M_PI * frequency * time));
   }
 }
 
-void synthesizer(Note notes[], int num_notes) {
-  int total_samples = 0;
-  for (int i = 0; i < num_notes; i++) {
-    total_samples += (int)(notes[i].duration * 0.001 * FREQUENCY);
-  }
-
-  int16_t *buf = (int16_t *)malloc(total_samples * sizeof(int16_t));
-  if (!buf) {
-    fprintf(stderr, "Malloc failed\n");
-    exit(1);
-  }
-
-  int sample_index = 0;
-  for (int i = 0; i < num_notes; i++) {
-    Note note = notes[i];
-    int samples = (int)(note.duration * 0.001 * FREQUENCY);
-    generate_samples(buf + sample_index, samples, note.frequency,
-                     note.duration);
-    sample_index += samples;
-  }
-
+void playAudio(Note notes[], int num_notes, int total_samples, int16_t *buf) {
   SDL_AudioSpec audio_spec;
   audio_spec.freq = FREQUENCY;
   audio_spec.format = AUDIO_S16SYS;
@@ -96,4 +74,27 @@ void synthesizer(Note notes[], int num_notes) {
   SDL_PauseAudio(1);
   SDL_CloseAudio();
   free(buf);
+}
+
+void synthesizer(Note notes[], int num_notes) {
+  int total_samples = 0;
+  for (int i = 0; i < num_notes; i++) {
+    total_samples += (int)(notes[i].duration * 0.001 * FREQUENCY);
+  }
+
+  int16_t *buf = (int16_t *)malloc(total_samples * sizeof(int16_t));
+  if (!buf) {
+    fprintf(stderr, "Malloc failed\n");
+    exit(1);
+  }
+
+  int sample_index = 0;
+  for (int i = 0; i < num_notes; i++) {
+    Note note = notes[i];
+    int samples = (int)(note.duration * 0.001 * FREQUENCY);
+    generateSamples(buf + sample_index, samples, note.frequency);
+    sample_index += samples;
+  }
+
+  playAudio(notes, num_notes, total_samples, buf);
 }

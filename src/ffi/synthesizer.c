@@ -44,7 +44,7 @@ void generateSamples(int16_t *buf, int num_samples, double frequency) {
   }
 }
 
-void playAudio(Note notes[], int num_notes, int total_samples, int16_t *buf) {
+void playNotes(Note notes[], int num_notes, int total_samples, int16_t *buf) {
   SDL_AudioSpec audio_spec;
   audio_spec.freq = FREQUENCY;
   audio_spec.format = AUDIO_S16SYS;
@@ -96,5 +96,5 @@ void synthesizer(Note notes[], int num_notes) {
     sample_index += samples;
   }
 
-  playAudio(notes, num_notes, total_samples, buf);
+  playNotes(notes, num_notes, total_samples, buf);
 }
